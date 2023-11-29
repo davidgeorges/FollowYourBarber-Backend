@@ -15,8 +15,8 @@ def token_filter(get_response):
         
         try:
             refresh_token = request.COOKIES.get("refresh_token")
-            if refresh_token is None :
-                return JsonResponse({"message": "Missing refresh token."}, status=401)
+            if refresh_token is None:
+                return JsonResponse({"message": "Missing refresh_token."}, status=401)
             
             if token_manager.check_if_is_expired(refresh_token, "REFRESH"):
                 return JsonResponse({"message": "Error refresh_token expired."}, status=401)
@@ -27,6 +27,25 @@ def token_filter(get_response):
             
             if token_manager.check_if_is_expired(access_token, "ACCESS"):
                 return JsonResponse({"message": "Error access_token expired."}, status=401)
+
+            return get_response(request)
+        except Exception as e:
+            logger.error("An error occurred in the middleware.token_filter", exc_info=True)
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return middleware
+
+def authorization_filter(get_response):
+    
+    def middleware(request):
+
+        request_splited = request.path.split("/")
+        print(request.path)
+        if "auth" or "hairSalons" in request_splited:
+            return get_response(request)
+        
+        try:
+            access_token = request.COOKIES.get("access_token")
 
             user_role = token_manager.get_data("role", access_token, "ACCESS")
             if user_role is None:

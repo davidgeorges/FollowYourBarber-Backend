@@ -1,13 +1,13 @@
 from django.http import JsonResponse
 from classes.TokenManager import token_manager
-from follow_your_barber.customDecoractor import verified_status
+from follow_your_barber.customDecoractor import access_denied_if_status
 from .models import User
 from django.core import serializers
 import logging
 
 logger = logging.getLogger('django')
 
-@verified_status("ACTIVE","EMAIL_VERIFIED","PHONE_VERIFIED")
+@access_denied_if_status(["SUSPENDED"],[""],[""])
 def get_account_details(request):
     try :
 

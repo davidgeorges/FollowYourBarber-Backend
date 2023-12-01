@@ -10,7 +10,7 @@ def token_filter(get_response):
     def middleware(request):
 
         request_splited = request.path.split("/")
-        if "auth" in request_splited:
+        if "auth" in request_splited and "sendVerificationMail" not in request_splited:
             return get_response(request)
         
         try:
@@ -40,7 +40,6 @@ def authorization_filter(get_response):
     def middleware(request):
 
         request_splited = request.path.split("/")
-        print(request.path)
         if "auth" or "hairSalons" in request_splited:
             return get_response(request)
         

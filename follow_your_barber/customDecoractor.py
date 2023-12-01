@@ -18,8 +18,8 @@ def access_denied_if_status(account_status_list,email_status_list,phone_number_l
                 if user_from_db["email_status"] in email_status_list:
                     return JsonResponse({"message": f"Email status should not be one of : {email_status_list} for route {request.path_info}"}, status=403)
 
-                if user_from_db["phone_number_status"] in phone_number_list:
-                    return JsonResponse({"message": f"Phone number status should not be one of : {phone_number_list} for route {request.path_info}"}, status=403)
+                #if user_from_db["phone_number_status"] in phone_number_list:
+                    #return JsonResponse({"message": f"Phone number status should not be one of : {phone_number_list} for route {request.path_info}"}, status=403)
 
                 return view_func(request, *args, **kwargs)
             except Exception as e :

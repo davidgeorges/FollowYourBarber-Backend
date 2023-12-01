@@ -71,7 +71,7 @@ ROOT_URLCONF = 'follow_your_barber.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'follow_your_barber', 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -169,9 +169,18 @@ LOGGING = {
     },
 }
 
+LOGIN_URL = 'login'
+
 #JWT SECTION
 JWT_ACCESS_TOKEN_SECRET = os.getenv("JWT_ACCESS_TOKEN_SECRET")
 JWT_REFRESH_TOKEN_SECRET = os.getenv("JWT_REFRESH_TOKEN_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 JWT_ACCESS_TOKEN_EXPIRES_IN = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_IN"))
 JWT_REFRESH_TOKEN_EXPIRES_IN = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRES_IN"))
+
+#MAIL SECTION
+MAIL_FROM = os.getenv("MAIL_FROM")
+MAIL_SERVER = os.getenv("MAIL_SERVER")
+MAIL_PORT = os.getenv("MAIL_PORT")
+MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")

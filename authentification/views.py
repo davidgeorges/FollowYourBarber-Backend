@@ -7,6 +7,7 @@ from users.models import Address, User
 from authentification.models import RefreshToken
 from classes.TokenManager import token_manager
 from classes.PasswordManager import password_manager
+from classes.MailManager import mail_manager
 import json
 import logging
 
@@ -17,31 +18,34 @@ def login(request):
     try:
         with transaction.atomic():
             user_from_body = json.loads(request.body) 
-            user_from_db = list(User.objects.filter(email=str(user_from_body["email"]).upper()).values("id", "first_name", "last_name", "account_status", "password_hash","role", "refresh_token"))[0]
+            user_from_db = list(User.objects.filter(email=str(user_from_body["email"]).upper()).values("id", "first_name", "last_name", "account_status", "password_hash","role", "refresh_token"))
+
+            if len(user_from_db) <= 0 : 
+                return JsonResponse({"error": "User not found."}, status=404)
             
-            if not password_manager.verify_password(user_from_body["password"],user_from_db["password_hash"]) :
+            if not password_manager.verify_password(user_from_body["password"],user_from_db[0]["password_hash"]) :
                 return JsonResponse({"message": "Wrong credentials."},status=401)
             
             user_from_body["password"] = None
             
-            if user_from_db["account_status"] in ("INACTIVE", "SUSPENDED") : 
-                return JsonResponse({"message": f"Account {user_from_db['account_status']}"},status=403)
+            if user_from_db[0]["account_status"] in ("INACTIVE", "SUSPENDED") : 
+                return JsonResponse({"message": f"Account {user_from_db[0]['account_status']}"},status=403)
 
-            if user_from_db["role"] is None : 
+            if user_from_db[0]["role"] is None : 
                 raise Exception("Error in data format.")
             
-            if user_from_db["refresh_token"] is not None :
-                RefreshToken.objects.get(pk=user_from_db["refresh_token"]).delete()
+            if user_from_db[0]["refresh_token"] is not None :
+                RefreshToken.objects.get(pk=user_from_db[0]["refresh_token"]).delete()
                 
-            access_token = "Bearer "+token_manager.create_token(user_from_db["id"], user_from_db["role"], user_from_db["account_status"], "ACCESS")
-            refresh_token = "Bearer "+token_manager.create_token(user_from_db["id"], user_from_db["role"], user_from_db["account_status"], "REFRESH")
+            access_token = "Bearer "+token_manager.create_token(user_from_db[0]["id"], user_from_db[0]["role"], user_from_db[0]["account_status"], "ACCESS")
+            refresh_token = "Bearer "+token_manager.create_token(user_from_db[0]["id"], user_from_db[0]["role"], user_from_db[0]["account_status"], "REFRESH")
 
             refresh_token_in_db = RefreshToken.create_with_user_id(refresh_token, email=user_from_body["email"].upper())
             refresh_token_in_db.save()
     
             User.objects.filter(email=str(user_from_body["email"]).upper()).update(refresh_token=refresh_token_in_db)
 
-            response = JsonResponse({"message" :"User connected with success.", "id":user_from_db["id"], "role" : user_from_db["role"], "accountStatus" : user_from_db["account_status"]},status=200)
+            response = JsonResponse({"message" :"User connected with success.", "id":user_from_db[0]["id"], "role" : user_from_db[0]["role"], "accountStatus" : user_from_db[0]["account_status"]},status=200)
             response.set_cookie(key="access_token",value=access_token,httponly=True)
             response.set_cookie(key="refresh_token",value=refresh_token,httponly=True)
         
@@ -90,6 +94,21 @@ def register(request):
     except Exception as e:
         logger.error("An error occurred in the authentification.register", exc_info=True)
         return JsonResponse({"error": str(e)}, status=500)
+    
+@require_http_methods(["POST"])
+def send_verification_mail(request, user_id):
+    try:
+        user_from_db = list(User.objects.filter(id=user_id).values("first_name","email"))
+
+        if len(user_from_db) <= 0 : 
+            return JsonResponse({"error": "User not found."}, status=404)
+        
+        mail_manager.send_verification_mail(user_from_db[0]['first_name'],user_from_db[0]['email'])
+        
+        return JsonResponse({"message": "Mail send successfully"}, status=200)
+    except Exception as e : 
+        logger.error("An error occurred in the authentification.login", exc_info=True)
+        return JsonResponse({"error": str(e)}, status=500)   
 
 @require_http_methods(["GET"])
 def get_csrf_token(request):

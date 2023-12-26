@@ -36,10 +36,10 @@ def role_required(allowed_roles):
                 access_token = request.COOKIES.get("access_token")
                 user_role = token_manager.get_data("role", access_token, "ACCESS")
 
-                if user_role == "ADMIN" or user_role in allowed_roles:
-                    return view_func(request, *args, **kwargs)
+                if user_role not in allowed_roles and user_role != "ADMIN":
+                    return JsonResponse({"message": "Missing rights."}, status=403)
                 
-                return JsonResponse({"message": "Missing rights."}, status=403)
+                return view_func(request, *args, **kwargs)
             except Exception as e :
                 return JsonResponse({"error": str(e)}, status=500)
         return wrapper
@@ -54,7 +54,7 @@ def owner_required():
                 current_user_id = token_manager.get_data("id", access_token, "ACCESS")
                 user_role = token_manager.get_data("role", access_token, "ACCESS")
             
-                if current_user_id != user_id or user_role != "ADMIN" : 
+                if current_user_id != user_id and user_role != "ADMIN" : 
                     return JsonResponse({"message": "User is not the owner of the resource."}, status=403)
            
                 return view_func(request, user_id, *args, **kwargs)
